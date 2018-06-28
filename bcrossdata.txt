@@ -1,0 +1,6 @@
+DISCORD
+newmember=
+
+TWITCH
+nick=
+prefix=

@@ -1,5 +1,7 @@
-import socket, sys, os
+import socket, sys, os, bcrossover
 import urllib.request as urlr
+
+co = bcrossover.CrossStorage()
 
 # Set all the variables necessary to connect to Twitch IRC
 CF = open("bconfig.txt","r")
@@ -9,6 +11,7 @@ CHANNEL = CHANNEL.replace("\n","")
 NICK = CF.readline()
 NICK = NICK.replace("NICK=","")
 NICK = NICK.replace("\n","")
+co.ttdNickname(NICK)
 PASS = CF.readline()
 PASS = PASS.replace("PASS=","")
 PASS = PASS.replace("\n","")
@@ -34,6 +37,15 @@ s.send(("CAP REQ :twitch.tv/commands \r\n").encode("UTF-8"))
 print(NICK + "[Bot Ready]")
 print(NICK + "[Info] Channel: " + CHANNEL + ", PORT: " + str(PORT))
 
+DEBUG = True
+
+def checkDebug(user):
+    if user == CHANNEL:
+        return True
+    if DEBUG:
+        return False
+    return True
+
 # SETTINGS
 PREFIX = ""
 BOTMODS = []
@@ -56,6 +68,7 @@ for line in sf:
                 bml += bm + " "
         print(NICK + "[Botmods] " + bml)
 sf.close()
+co.ttdPrefix("prefix",PREFIX)
 
 # KEYWORDS
 kwf = open("bkeywords.txt","r")
@@ -156,13 +169,12 @@ while True:
                 if MODT:
 
                     # You can add all your plain commands here
-                    if message == "Hey":
+                    if message == "Hey" and checkDebug(username):
                         Send_message("Welcome to the stream, " + username)
-
-                    if message in KEYWORDS_TRIGGER:
+                    if message in KEYWORDS_TRIGGER and checkDebug(username):
                         Send_message(KEYWORDS_RESPONSE[KEYWORDS_TRIGGER.index(message)])
 
-                    if message == (PREFIX + "settings"):
+                    if message == (PREFIX + "settings") and checkDebug(username):
                         if username not in MODS:
                             Send_message("[" + username + "] You are not Moderator!")
                         else:
@@ -199,7 +211,7 @@ while True:
                                     print(NICK + "[Botmods] " + bml)
                             sf.close()
                             Send_message("[" + username + "] Refreshed Settings files")
-                    if message.startswith(PREFIX + "botmod"):
+                    if message.startswith(PREFIX + "botmod") and checkDebug(username):
                         if message == PREFIX + "botmod":
                             Send_message("[" + username + "] Invalid Syntax! Usage: '" + PREFIX + "botmod <user>'")
                         else:
@@ -214,7 +226,7 @@ while True:
                                     BOTMODS.append(bmword)
                                     Send_message("[" + username + "] " + bmword + " added as a Botmod")
                                     print(NICK + "[Botmods] Added " + bmword)
-                    if message.startswith(PREFIX + "prefix"):
+                    if message.startswith(PREFIX + "prefix") and checkDebug(username):
                         if message == PREFIX + "prefix":
                             Send_message("[" + username + "] Invalid Syntax! Usage: '" + PREFIX + "prefix <new prefix>'")
                         else:
@@ -229,7 +241,7 @@ while True:
                                     PREFIX = prword
                                     Send_message("[" + username + "] Changed prefix to " + PREFIX)
                                     print(NICK + "[Prefix] New Prefix: " + PREFIX)
-                    if message.startswith(PREFIX + "keyword"):
+                    if message.startswith(PREFIX + "keyword") and checkDebug(username):
                         if message == PREFIX + "keyword":
                             Send_message("[" + username + "] Invalid Syntax! Usage: '" + PREFIX + "keyword <keyword> <response>'")
                         else:
@@ -263,6 +275,15 @@ while True:
                                     KEYWORDS_RESPONSE.append(kwresponse)
                                     Send_message("[" + username + "] Added new Keyword")
                                     print(NICK + "[Keywords] Added new Keyword " + kwtrigger + "=" + kwresponse)
+                    if message == (PREFIX + "debug") and checkDebug(username):
+                        if DEBUG:
+                            DEBUG = False
+                            Send_message("[" + username + "] Turned off Debug Mode")
+                            print(NICK + "[Debug Mode] Deactivated")
+                        else:
+                            DEBUG = True
+                            Send_message("[" + username + "] Turned on Debug Mode (no other users can use commands)")
+                            print(NICK + "[Debug Mode] Activated")
                 for l in parts:
                     if "End of /NAMES list" in l:
                         MODT = True
