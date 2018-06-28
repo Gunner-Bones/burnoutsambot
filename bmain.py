@@ -1,5 +1,5 @@
-import socket, string, sys, os
-import urllib2
+import socket, sys, os
+import urllib.request as urlr
 
 # Set all the variables necessary to connect to Twitch IRC
 CF = open("bconfig.txt","r")
@@ -15,7 +15,7 @@ PASS = PASS.replace("\n","")
 CF.close()
 
 if len(CHANNEL) == 0 or len(NICK) == 0 or len(PASS) < 10:
-    print "[Error] Invalid configuration file! File needs to be named \'bconfig.txt\', and look like this:\nCHANNEL=gunner_bones\nNICK=bonesbot\nPASS=oauth:YOURAUTHHERE"
+    print("[Error] Invalid configuration file! File needs to be named \'bconfig.txt\', and look like this:\nCHANNEL=gunner_bones\nNICK=bonesbot\nPASS=oauth:YOURAUTHHERE")
     sys.exit()
 
 HOST = "irc.twitch.tv"
@@ -26,9 +26,10 @@ MODT = False
 # Connecting to Twitch IRC by passing credentials and joining a certain channel
 s = socket.socket()
 s.connect((HOST, PORT))
-s.send("PASS " + PASS + "\r\n")
-s.send("NICK " + NICK + "\r\n")
-s.send("JOIN #" + CHANNEL + " \r\n")
+s.send(("PASS " + PASS + "\r\n").encode("UTF-8"))
+s.send(("NICK " + NICK + "\r\n").encode("UTF-8"))
+s.send(("JOIN #" + CHANNEL + " \r\n").encode("UTF-8"))
+s.send(("CAP REQ :twitch.tv/commands \r\n").encode("UTF-8"))
 
 print(NICK + "[Bot Ready]")
 print(NICK + "[Info] Channel: " + CHANNEL + ", PORT: " + str(PORT))
@@ -42,7 +43,7 @@ for line in sf:
         PREFIX = line
         PREFIX = PREFIX.replace("PREFIX=", "")
         PREFIX = PREFIX.replace("\n", "")
-        print NICK + "[Prefix] " + PREFIX
+        print(NICK + "[Prefix] " + PREFIX)
     if line.startswith("BOTMODS="):
         bmph = line
         bmph = bmph.replace("BOTMODS=", "")
@@ -53,7 +54,7 @@ for line in sf:
         for bm in BOTMODS:
             if len(bm) > 0:
                 bml += bm + " "
-        print NICK + "[Botmods] " + bml
+        print(NICK + "[Botmods] " + bml)
 sf.close()
 
 # KEYWORDS
@@ -69,38 +70,33 @@ for kw in kwplaceholder:
     KEYWORDS_TRIGGER.append(kwp[0])
     KEYWORDS_RESPONSE.append(kwp[1])
 kwf.close()
-print NICK + "[Keywords] Found " + str(len(KEYWORDS_TRIGGER)) + " keywords"
+print(NICK + "[Keywords] Found " + str(len(KEYWORDS_TRIGGER)) + " keywords")
 
 
 # Method for sending a message
 def Send_message(message):
-    s.send("PRIVMSG #" + CHANNEL + " :" + message + "\r\n")
+    s.send(("PRIVMSG #" + CHANNEL + " :" + message + "\r\n").encode("UTF-8"))
     print(NICK + "[Send Message] " + message)
-
 
 # MODERATORS
 MODS = []
 ccl = "http://tmi.twitch.tv/group/user/" + CHANNEL + "/chatters"
-ccl = urllib2.urlopen(ccl)
-ccl = ccl.read()
-ccl = ccl.split("\n")
-ccmi = ccl.index("    \"moderators\": [")
-ccbi = ccl.index("    ],")
-ccind = 0
-for data in ccl:
-    if ccind > ccmi and ccind < ccbi:
-        dph = data
-        dph = dph.replace(" ","")
-        dph = dph.replace("\"","")
-        dph = dph.replace(",","")
-        MODS.append(dph)
-    ccind += 1
+ccl = urlr.Request(ccl, headers={'User-Agent': 'Mozilla/5.0'})
+ccl = str(urlr.urlopen(ccl).read())
+ccmi = ccl.index("\"moderators\": ")
+ccbi = ccl.index("]")
+ccl = ccl[ccmi + 15:ccbi]
+ccl = ccl.replace("\\n","")
+ccl = ccl.replace(" ","")
+ccl = ccl.replace("\"","")
+ccl = ccl.split(",")
+MODS = ccl
 
 def printMods():
     cm = ""
     for m in MODS:
         cm += m + " "
-    print NICK + "[Connected Mods] " + cm
+    print(NICK + "[Connected Mods] " + cm)
 printMods()
 
 def settingsChange(type,new,mode):
@@ -117,7 +113,9 @@ def settingsChange(type,new,mode):
     for l in scl:
         if str(l).startswith(type):
             if mode == 1:
-                lp = l.replace(type + "=","") + new + ";"
+                lp = l.replace(type + "=","")
+                lp = lp.replace("\n","")
+                lp += new + ";"
                 scl[scl.index(l)] = type + "=" + lp
             elif mode == 2:
                 scl[scl.index(l)] = type + "=" + new
@@ -130,19 +128,19 @@ def settingsChange(type,new,mode):
     sc.write(scn)
     sc.close()
 
-print
+print()
 while True:
-    readbuffer = readbuffer + s.recv(1024)
-    temp = string.split(readbuffer, "\n")
+    readbuffer = readbuffer + s.recv(1024).decode("UTF-8")
+    temp = readbuffer.split("\n")
     readbuffer = temp.pop()
 
     for line in temp:
         # Checks whether the message is PING because its a method of Twitch to check if you're afk
         if (line[0] == "PING"):
-            s.send("PONG %s\r\n" % line[1])
+            s.send(("PONG %s\r\n" % line[1]).encode("UTF-8"))
         else:
             # Splits the given string so we can work with it better
-            parts = string.split(line, ":")
+            parts = line.split(":")
 
             if "QUIT" not in parts[1] and "JOIN" not in parts[1] and "PART" not in parts[1]:
                 try:
@@ -151,12 +149,11 @@ while True:
                 except:
                     message = ""
                 # Sets the username variable to the actual username
-                usernamesplit = string.split(parts[1], "!")
+                usernamesplit = str(parts[1]).split("!")
                 username = usernamesplit[0]
 
                 # Only works after twitch is done announcing stuff (MODT = Message of the day)
                 if MODT:
-                    username + ": " + message
 
                     # You can add all your plain commands here
                     if message == "Hey":
@@ -169,7 +166,17 @@ while True:
                         if username not in MODS:
                             Send_message("[" + username + "] You are not Moderator!")
                         else:
-                            print NICK + "[Settings Update]"
+                            print(NICK + "[Settings Update]")
+                            sf = open("bsettings.txt","r")
+                            sfc = ""
+                            for line in sf:
+                                if len(line) > 3:
+                                    sfc += line
+                            sf.close()
+                            sf = open("bsettings.txt","w")
+                            sf.truncate()
+                            sf.write(sfc)
+                            sf.close()
                             sf = open("bsettings.txt", "r")
                             for line in sf:
                                 if line.startswith("PREFIX="):
@@ -177,7 +184,7 @@ while True:
                                     PREFIX = line
                                     PREFIX = PREFIX.replace("PREFIX=", "")
                                     PREFIX = PREFIX.replace("\n", "")
-                                    print NICK + "[Prefix] " + PREFIX
+                                    print(NICK + "[Prefix] " + PREFIX)
                                 if line.startswith("BOTMODS="):
                                     bmph = line
                                     bmph = bmph.replace("BOTMODS=", "")
@@ -189,7 +196,7 @@ while True:
                                     for bm in BOTMODS:
                                         if len(bm) > 0:
                                             bml += bm + " "
-                                    print NICK + "[Botmods] " + bml
+                                    print(NICK + "[Botmods] " + bml)
                             sf.close()
                             Send_message("[" + username + "] Refreshed Settings files")
                     if message.startswith(PREFIX + "botmod"):
@@ -206,7 +213,7 @@ while True:
                                     settingsChange("BOTMODS",bmword,1)
                                     BOTMODS.append(bmword)
                                     Send_message("[" + username + "] " + bmword + " added as a Botmod")
-                                    print NICK + "[Botmods] Added " + bmword
+                                    print(NICK + "[Botmods] Added " + bmword)
                     if message.startswith(PREFIX + "prefix"):
                         if message == PREFIX + "prefix":
                             Send_message("[" + username + "] Invalid Syntax! Usage: '" + PREFIX + "prefix <new prefix>'")
@@ -221,7 +228,7 @@ while True:
                                     settingsChange("PREFIX",prword,2)
                                     PREFIX = prword
                                     Send_message("[" + username + "] Changed prefix to " + PREFIX)
-                                    print NICK + "[Prefix] New Prefix: " + PREFIX
+                                    print(NICK + "[Prefix] New Prefix: " + PREFIX)
                     if message.startswith(PREFIX + "keyword"):
                         if message == PREFIX + "keyword":
                             Send_message("[" + username + "] Invalid Syntax! Usage: '" + PREFIX + "keyword <keyword> <response>'")
@@ -242,7 +249,8 @@ while True:
                                     kwf = open("bkeywords.txt","r")
                                     kwfp = ""
                                     for line in kwf:
-                                        kwfp += line
+                                        if len(line) > 3:
+                                            kwfp += line
                                     kwf.close()
                                     kwfp += kwtrigger + "=" + kwresponse + "\n"
                                     kwfp = kwfp.split("\n")
@@ -254,11 +262,11 @@ while True:
                                     KEYWORDS_TRIGGER.append(kwtrigger)
                                     KEYWORDS_RESPONSE.append(kwresponse)
                                     Send_message("[" + username + "] Added new Keyword")
-                                    print NICK + "[Keywords] Added new Keyword " + kwtrigger + "=" + kwresponse
+                                    print(NICK + "[Keywords] Added new Keyword " + kwtrigger + "=" + kwresponse)
                 for l in parts:
                     if "End of /NAMES list" in l:
                         MODT = True
-                        print
+                        print()
                 if parts[0] == "PING ":
                     print(NICK + "[Ping]")
                 else:
@@ -268,4 +276,5 @@ while True:
                         if c > 1:
                             mes += l
                         c += 1
-                    print mes
+                    if len(mes) > 8:
+                        print(mes)
