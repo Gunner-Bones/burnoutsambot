@@ -15,11 +15,24 @@ def changeData(datatype,data):
         else:
             cdn.append(line)
     cd.close()
-    cd = open("bcrossdata.txt","w")
+    cd = open("bcrossdata.txt","w+")
     cd.truncate()
-    for d in cd:
+    for d in cdn:
         cd.write(d + "\n")
     cd.close()
+    fb = open("bcrossdata.txt","r")
+    fba = []
+    for line in fb:
+        if len(line) > 4:
+            fba.append(line.replace("\n",""))
+    fb.close()
+    fb = open("bcrossdata.txt","w")
+    fbn = ""
+    for l in fba:
+        fbn += l + "\n"
+    fb.truncate()
+    fb.write(fbn)
+    fb.close()
 
 class CrossStorage(object):
     def __init__(self):
@@ -36,13 +49,15 @@ class CrossStorage(object):
         newData = ""
         ad = open("bcrossdata.txt","r")
         for line in ad:
-            if "TWITCH" in line:
-                break
-            elif "DISCORD" not in line:
-                lc = line.split("=")
-                if len(lc[1]) > 2:
-                    sendData.append(str(line).replace("\n",""))
-                    deleteOld.append(lc[0])
+            if line != "\n" or line != "":
+                if "TWITCH" in line:
+                    break
+                elif "DISCORD" not in line:
+                    lc = line.split("=")
+                    if len(lc) > 1:
+                        if len(lc[1]) > 2:
+                            sendData.append(str(line).replace("\n",""))
+                            deleteOld.append(lc[0])
         ad.close()
         nd = open("bcrossdata.txt","r")
         for line in nd:
@@ -66,14 +81,16 @@ class CrossStorage(object):
         indiscord = True
         ad = open("bcrossdata.txt","r")
         for line in ad:
-            if "TWITCH" in line:
-                indiscord = False
-            if not indiscord:
-                if "TWITCH" not in line:
-                    lc = line.split("=")
-                    if len(lc[1]) > 2:
-                        sendData.append(str(line).replace("\n", ""))
-                        deleteOld.append(lc[0])
+            if line != "\n" or line != "":
+                if "TWITCH" in line:
+                    indiscord = False
+                if not indiscord:
+                    if "TWITCH" not in line:
+                        lc = line.split("=")
+                        if len(lc) > 1:
+                            if len(lc[1]) > 2:
+                                sendData.append(str(line).replace("\n", ""))
+                                deleteOld.append(lc[0])
         ad.close()
         nd = open("bcrossdata.txt","r")
         for line in nd:

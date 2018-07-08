@@ -1,6 +1,5 @@
 DISCORD
 newmember=
-
 TWITCH
 nick=
-prefix=
+prefix=?

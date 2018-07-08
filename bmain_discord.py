@@ -1,4 +1,5 @@
-import discord, asyncio, bcrossover, sys, os
+import discord, asyncio, sys, os
+from bcrossover import CrossStorage
 from discord.ext import commands
 
 Client = discord.Client()
@@ -16,7 +17,7 @@ runpass = runpass.translate(trtlrunpass)
 if sys.platform != "win32":
     runpass = runpass[:(len(runpass) - 2)]
 
-co = bcrossover.CrossStorage()
+co = CrossStorage()
 NICK = ""
 PREFIX = ""
 
@@ -30,11 +31,13 @@ def dembed(title,descrption,color):
 
 def checkTwitchData():
     newdata = co.discordCheckData()
-    if not len(newdata) > 0:
+    if len(newdata) > 0:
         for d in newdata:
-            if d.startswith("nick=") and not d == "nick=":
+            if d.startswith("nick=") and d != "nick=":
+                global NICK
                 NICK = d.replace("nick=","")
-            if d.startswith("prefix=") and not d == "prefix=":
+            if d.startswith("prefix=") and d != "prefix=":
+                global PREFIX
                 PREFIX = d.replace("prefix=","")
 
 @client.event
@@ -56,8 +59,11 @@ async def on_member_join(member):
 
 @client.event
 async def on_message(message):
-    if message == PREFIX + "checknewdata":
+    if message.content == PREFIX + "checknewdata":
         checkTwitchData()
         await client.send_message(destination=message.channel,embed=dembed("Checked for New Twitch Data","",0x899691))
+    if message.content.startswith("NMTEST"):
+        co.dttNewMember(str(message.content).replace("NMTEST ",""))
+        await client.send_message(destination=message.channel, embed=dembed("Sent a Test New Member Join message to the Twitch Bot", "", 0x899691))
 
 client.run(runpass)

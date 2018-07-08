@@ -1,7 +1,8 @@
-import socket, sys, os, bcrossover
+import socket, sys, os
 import urllib.request as urlr
+from bcrossover import CrossStorage
 
-co = bcrossover.CrossStorage()
+co = CrossStorage()
 
 # Set all the variables necessary to connect to Twitch IRC
 CF = open("bconfig.txt","r")
@@ -68,7 +69,8 @@ for line in sf:
                 bml += bm + " "
         print(NICK + "[Botmods] " + bml)
 sf.close()
-co.ttdPrefix("prefix",PREFIX)
+co.ttdPrefix(PREFIX)
+NEWMEMBER = ""
 
 # KEYWORDS
 kwf = open("bkeywords.txt","r")
@@ -90,6 +92,15 @@ print(NICK + "[Keywords] Found " + str(len(KEYWORDS_TRIGGER)) + " keywords")
 def Send_message(message):
     s.send(("PRIVMSG #" + CHANNEL + " :" + message + "\r\n").encode("UTF-8"))
     print(NICK + "[Send Message] " + message)
+
+# Crossover
+def checkDiscordData():
+    newdata = co.discordCheckData()
+    if len(newdata) > 0:
+        for d in newdata:
+            if d.startswith("newmember=") and d != "newmember=":
+                global NEWMEMBER
+                NEWMEMBER = d.replace("newmember=","")
 
 # MODERATORS
 MODS = []
@@ -167,6 +178,11 @@ while True:
 
                 # Only works after twitch is done announcing stuff (MODT = Message of the day)
                 if MODT:
+
+                    checkDiscordData()
+                    if NEWMEMBER != "":
+                        Send_message(NEWMEMBER + " has joined the Discord Server!")
+                        NEWMEMBER = ""
 
                     # You can add all your plain commands here
                     if message == "Hey" and checkDebug(username):
