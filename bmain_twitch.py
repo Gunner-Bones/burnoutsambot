@@ -71,6 +71,7 @@ for line in sf:
 sf.close()
 co.ttdPrefix(PREFIX)
 NEWMEMBER = ""
+GDR_ON = False
 
 # KEYWORDS
 kwf = open("bkeywords.txt","r")
@@ -190,6 +191,13 @@ while True:
                     if message in KEYWORDS_TRIGGER and checkDebug(username):
                         Send_message(KEYWORDS_RESPONSE[KEYWORDS_TRIGGER.index(message)])
 
+                    if message == (PREFIX + "gdrequests") and checkDebug(username):
+                        if GDR_ON:
+                            GDR_ON = False
+                            Send_message("[" + username + "] Turned off Geometry Dash Requests")
+                        else:
+                            GDR_ON = True
+                            Send_message("[" + username + "] Turned on Geometry Dash Requests")
                     if message == (PREFIX + "settings") and checkDebug(username):
                         if username not in MODS:
                             Send_message("[" + username + "] You are not Moderator!")
