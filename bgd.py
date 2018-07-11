@@ -14,6 +14,7 @@ def getanylevel(levelname):
     35 - Description (Requires decode)
     39 - Original
     37 - Length (0:Tiny,1:Short,2:Medium,3:Long,4:XL)
+    27 - Pass
 
     11 - Difficulty:
         if 11 is 50:
@@ -39,6 +40,8 @@ def getanylevel(levelname):
     p = p.encode()
     data = urlopen(url, p).read().decode()
     data = data.split(":")
+
+    if data[0] == "-1": return []
 
     levelHasOriginal = True
     if data[39] == "0":
@@ -147,6 +150,8 @@ class GDRequests(object):
         for level in self.levels:
             if level[0] == lid:
                 self.levels.remove(level)
+    def clearlevels(self):
+        self.levels = []
     def setrequestlimit(self,limit):
         self.requestlimit = limit
     def getlevelname(self,lid):
@@ -202,4 +207,5 @@ class GDRequests(object):
         return None
 
 
-getanylevel("34814397")
+
+getanylevel("Purgatory")

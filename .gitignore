@@ -1,3 +1,12 @@
 
 bconfig.txt
 bdiscord.txt
+GeometryPy/__init__.py
+GeometryPy/__pycache__/__init__.cpython-36.pyc
+GeometryPy/__pycache__/main.cpython-36.pyc
+GeometryPy/commands/__init__.py
+GeometryPy/commands/__pycache__/__init__.cpython-36.pyc
+GeometryPy/commands/__pycache__/GetUserInfo.cpython-36.pyc
+GeometryPy/commands/__pycache__/main.cpython-36.pyc
+GeometryPy/utils/__init__.py
+GeometryPy/utils/__pycache__/__init__.cpython-36.pyc

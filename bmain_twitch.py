@@ -1,6 +1,7 @@
 import socket, sys, os
 import urllib.request as urlr
 from bcrossover import CrossStorage
+from bgd import GDRequests
 
 co = CrossStorage()
 
@@ -88,6 +89,130 @@ for kw in kwplaceholder:
 kwf.close()
 print(NICK + "[Keywords] Found " + str(len(KEYWORDS_TRIGGER)) + " keywords")
 
+# GEOMETRY DASH REQUESTS
+GDRClient = GDRequests()
+GDRLIST = GDRClient.levels
+def gdr_getrawrequestlist():
+    if GDR_ON:
+        levellist = []
+        gdro = open("bgdqueue.txt","r")
+        for l in gdro:
+            levellist.append(l)
+        gdro.close()
+        return levellist
+    return []
+def gdr_updategloballist():
+    global GDRLIST
+    GDRLIST = GDRClient.levels
+def gdr_popqueue():
+    """
+    Startup GDR Fill Request Method
+    :return:
+    0 - Success
+    1 - Failed(GDR_ON disabled)
+    2 - Failed(No Acceptable Levels in Queue)
+    """
+    if len(gdr_getrawrequestlist()) > 0:
+        rawlist = gdr_getrawrequestlist()
+        for ld in rawlist:
+            ldp = ld.split("=")
+            ldp[1].replace("\n","")
+            GDRClient.addlevel(ldp[0],ldp[1])
+        gdr_updategloballist()
+        global GDRLIST
+        if len(GDRLIST) == 0:
+            return 2
+        return 0
+    return 1
+def gdr_addlevel(lid,ruser):
+    """
+    :param lid: (str) Level ID
+    :param ruser: (str) Username
+    :return:
+    0 - Success
+    1-5 - Failed(Unacceptable Level)
+    6 - Failed(GDR_ON disabled)
+    """
+    if GDR_ON:
+        ldr = GDRClient.addlevel(lid,ruser)
+        if ldr == 0:
+            gdrl = []
+            gdro = open("bgdqueue.txt","r")
+            for l in gdro:
+                gdrl.append(l)
+            gdrl.append(lid + "=" + ruser + "\n")
+            gdro.close()
+            gdrn = ""
+            for n in gdrl:
+                gdrn += n
+            gdro = open("bgdqueue.txt","w")
+            gdro.truncate()
+            gdro.write(gdrn)
+            gdro.close()
+            gdr_updategloballist()
+            return 0
+        else:
+            return ldr
+    return 6
+def gdr_removelevel(lid):
+    """
+    :param lid: (str) Level ID
+    :return:
+    0 - Success
+    1 - Failed(GDR_ON is disabled)
+    2 - Failed(Couldn't find level)
+    """
+    if GDR_ON:
+        gdro = open("bgdqueue.txt","r")
+        gdrl = []
+        for l in gdro:
+            gdrl.append(l.replace("\n",""))
+        gdrlevel = ""
+        for ld in gdrl:
+            ldp = ld.split("=")
+            if ldp[0] == lid:
+                gdrlevel = ld
+                break
+        if gdrlevel == "": return 2
+        gdrl.remove(gdrlevel)
+        gdrn = ""
+        for ln in gdrl:
+            gdrn += ln + "\n"
+        gdro.close()
+        gdro = open("bgdqueue.txt","w")
+        gdro.truncate()
+        gdro.write(gdrn)
+        gdro.close()
+        gdr_updategloballist()
+        return 0
+    return 1
+def gdr_skip():
+    """
+    :return:
+    0 - Success
+    1 - Failed(GDR_ON disabled)
+    2 - Failed(No Levels in Queue)
+    """
+    if GDR_ON:
+        global GDRLIST
+        if len(GDRLIST) == 0: return 2
+        GDRClient.removelevel(GDRLIST[0])
+        gdr_updategloballist()
+        return 0
+    return 1
+def gdr_clearqueue():
+    """
+    :return:
+    0 - Success
+    1 - Failed(GDR_ON disabled)
+    """
+    if GDR_ON:
+        GDRClient.clearlevels()
+        gdr_updategloballist()
+        return 0
+    return 1
+def gdrm_requestsoff(username):
+    Send_message("[" + username + "] Requests are Off!")
 
 # Method for sending a message
 def Send_message(message):
