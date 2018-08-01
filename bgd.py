@@ -77,8 +77,6 @@ def getanylevel(levelname):
     except:
         leveldesc = ""
     dl = ["ID=" + data[1],"Name=" + data[3],"Author=" + data[54],"Downloads=" + data[13],"Likes=" + data[19],"Description=" + leveldesc,"Copied=" + str(levelHasOriginal),"Length=" + levelLength,"Difficulty=" + levelDiff]
-    print(dl)
-    print(data)
     return dl
 
 class GDRequests(object):
@@ -121,6 +119,7 @@ class GDRequests(object):
         3:Failed(Blocked User)
         4:Failed(Blocked Level)
         5:Failed(Request Queue is Full)
+        6:Failed(Invalid Level)
         """
         if lid in self.blockedlevels:
             return 4
@@ -129,13 +128,14 @@ class GDRequests(object):
                 return 3
             else:
                 leveldata = getanylevel(lid)
-                leveldiff = (leveldata[9].split("="))[1]
+                if leveldata == []: return 6
+                leveldiff = (leveldata[8].split("="))[1]
                 if leveldiff == self.blockeddiff:
                     return 1
                 elif self.filterdiff != "None" and leveldiff != self.filterdiff:
                     return 1
                 else:
-                    levellength = (leveldata[8].split("="))[1]
+                    levellength = (leveldata[7].split("="))[1]
                     if levellength == self.blockedlength:
                         return 2
                     elif self.filterlength != "None" and levellength != self.filterlength:
@@ -144,8 +144,10 @@ class GDRequests(object):
                         if len(self.levels) == self.requestlimit:
                             return 5
                         else:
-                            self.levels.append([lid,ruser])
-                            return 0
+                            if getanylevel(lid) == []: return 6
+                            else:
+                                self.levels.append([lid,ruser])
+                                return 0
     def removelevel(self,lid):
         for level in self.levels:
             if level[0] == lid:
@@ -205,7 +207,3 @@ class GDRequests(object):
                 leveldata = getanylevel(level[0])
                 return (leveldata[3].split("="))[1]
         return None
-
-
-
-getanylevel("Purgatory")

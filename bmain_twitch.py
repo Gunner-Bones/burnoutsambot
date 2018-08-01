@@ -1,4 +1,4 @@
-import socket, sys, os
+import socket, sys, os, bgd
 import urllib.request as urlr
 from bcrossover import CrossStorage
 from bgd import GDRequests
@@ -130,8 +130,8 @@ def gdr_addlevel(lid,ruser):
     :param ruser: (str) Username
     :return:
     0 - Success
-    1-5 - Failed(Unacceptable Level)
-    6 - Failed(GDR_ON disabled)
+    1-6 - Failed(Unacceptable Level)
+    7 - Failed(GDR_ON disabled)
     """
     if GDR_ON:
         ldr = GDRClient.addlevel(lid,ruser)
@@ -153,7 +153,7 @@ def gdr_addlevel(lid,ruser):
             return 0
         else:
             return ldr
-    return 6
+    return 7
 def gdr_removelevel(lid):
     """
     :param lid: (str) Level ID
@@ -196,10 +196,17 @@ def gdr_skip():
     if GDR_ON:
         global GDRLIST
         if len(GDRLIST) == 0: return 2
+        lr = (GDRLIST[0])[0]
         GDRClient.removelevel(GDRLIST[0])
+        GDRLIST.pop(0)
         gdr_updategloballist()
+        gdr_removelevel(lr)
         return 0
     return 1
+def gdr_nextlevel():
+    if len(GDRLIST) != 0:
+        return GDRLIST[0]
+    else: return []
 def gdr_clearqueue():
     """
     :return:
@@ -207,7 +214,12 @@ def gdr_clearqueue():
     1 - Failed(GDR_ON disabled)
     """
     if GDR_ON:
+        global GDRLIST
         GDRClient.clearlevels()
+        gdrc = open("bgdqueue.txt","w")
+        gdrc.truncate()
+        gdrc.close()
+        GDRLIST = []
         gdr_updategloballist()
         return 0
     return 1
@@ -323,6 +335,76 @@ while True:
                         else:
                             GDR_ON = True
                             Send_message("[" + username + "] Turned on Geometry Dash Requests")
+                            gdr_popqueue()
+                    if message.startswith(PREFIX + "gdlookup"):
+                        lm = str(message).replace(PREFIX + "gdlookup ","")
+                        lms = bgd.getanylevel(lm)
+                        if lms == []: Send_message("[" + username + "] No Level Found!")
+                        else:
+                            lmid = (lms[0].split("="))[1]
+                            lmname = (lms[1].split("="))[1]
+                            lmauth = (lms[2].split("="))[1]
+                            lmlength = (lms[7].split("="))[1]
+                            lmdiff = (lms[8].split("="))[1]
+                            Send_message("[" + username + "] ID = " + lmid + ", Name = " + lmname + ", Author = " + lmauth + ", Length = " + lmlength + ", Difficulty = " + lmdiff)
+                    if message == (PREFIX + "gdrnext"):
+                        if GDR_ON:
+                            if username not in BOTMODS:
+                                Send_message("[" + username + "] You are not a BotMod!")
+                            else:
+                                nlo = gdr_nextlevel()
+                                rvf = gdr_skip()
+                                if rvf == 0:
+                                    nlos = bgd.getanylevel(nlo[0])
+                                    nloname = (nlos[1].split("="))[1]
+                                    nloauth = (nlos[2].split("="))[1]
+                                    Send_message("[" + username + "] Finished " + nloname + " by " + nloauth + " (" + nlo[0] + "), requested by " + nlo[1])
+                                    nln = gdr_nextlevel()
+                                    if nln == []: Send_message("The GD Request Queue is now empty!")
+                                    else:
+                                        nlns = bgd.getanylevel(nln[0])
+                                        nlnname = (nlns[1].split("="))[1]
+                                        nlnauth = (nlns[2].split("="))[1]
+                                        Send_message("Next Level: " + nlnname + " by " + nlnauth + " (" + nln[0] + "), requested by " + nln[1])
+                                else:
+                                    Send_message("[" + username + "] The Queue is empty!")
+                                    print(rvf)
+                    if message == (PREFIX + "gdrlist"):
+                        if username not in MODS:
+                            Send_message("[" + username + "] You are not Moderator!")
+                        elif GDR_ON:
+                            if len(GDRLIST) == 0: Send_message("[" + username + "] Queue is Empty!")
+                            else:
+                                ll = ""
+                                llc = 1
+                                print(GDRLIST)
+                                for ld in GDRLIST:
+                                    lld = bgd.getanylevel(ld[0])
+                                    lldname = (lld[1].split("="))[1]
+                                    lldauth = (lld[2].split("="))[1]
+                                    ll += str(llc) + ") " + lldname + " by " + lldauth + " (" + ld[0] + ") {" + ld[1].replace("\n","") + "}, "
+                                    llc += 1
+                                ll = ll[:len(ll) - 2]
+                                Send_message("[" + username + "] LEVEL QUEUE: " + ll)
+                    if message.startswith(PREFIX + "gdrma"):
+                        if username not in MODS:
+                            Send_message("[" + username + "] You are not Moderator!")
+                        else:
+                            am = str(message).replace(PREFIX + "gdrma ","")
+                            amr = gdr_addlevel(am,username)
+                            if amr == 0:
+                                ams = bgd.getanylevel(am)
+                                amname = (ams[1].split("="))[1]
+                                amauth = (ams[2].split("="))[1]
+                                Send_message("[" + username + "] Added Level to Queue: " + amname + " by " + amauth)
+                            else:
+                                Send_message("[" + username + "] Couldn't Add Level (Error Code " + str(amr) + ")")
+                    if message == (PREFIX + "gdrclear"):
+                        if username not in BOTMODS:
+                            Send_message("[" + username + "] You are not a BotMod!")
+                        elif GDR_ON:
+                            gdr_clearqueue()
+                            Send_message("[" + username + "] Cleared the Queue!")
                     if message == (PREFIX + "settings") and checkDebug(username):
                         if username not in MODS:
                             Send_message("[" + username + "] You are not Moderator!")
